@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 10% 96%;
+    --foreground: 0 0% 20%;
+
+    --card: 210 10% 94%;
+    --card-foreground: 0 0% 20%;
+
+    --checkbox-background: 0 0% 98%;
+    --checkbox-border: 0 0% 40%;
+    --checkbox-check: 0 0% 20%;
+
+    --popover: 210 10% 94%;
+    --popover-foreground: 0 0% 20%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 210 10% 80%;
+
+    --secondary: 210 10% 90%;
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 210 10% 88%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 210 10% 86%;
+    --accent-foreground: 0 0% 30%;
+
+    --destructive: 0 62.8% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 10% 85%;
+    --input: 210 10% 85%;
+    --ring: 210 10% 70%;
+
+    --radius: 0.5rem;
+  }
+
+  /* Dark mode variables */
+  :root .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 90%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 90%;
+
+    --checkbox-background: 0 0% 20%;
+    --checkbox-border: 0 0% 70%;
+    --checkbox-check: 0 0% 90%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 90%;
+
+    --primary: 0 0% 90%;
+    --primary-foreground: 0 0% 10%;
+
+    --secondary: 0 0% 20%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 70%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 90%;
+
+    --destructive: 0 100% 30%;
+    --destructive-foreground: 0 0% 90%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+.checkbox {
+  background-color: hsl(var(--checkbox-background));
+  border: 1px solid hsl(var(--checkbox-border));
+  color: hsl(var(--checkbox-check));
+}
+
+#sidebar {
+  position: absolute;
+  width: var(--plasmo-sidebar-width);
+  height: 100vh;
+  transition: all 0.5s ease;
+}
+
+#sidebar.open {
+  left: calc(var(--plasmo-sidebar-width) * -1);
+}
+
+#sidebar.closed {
+  left: 0px;
+}
+
+#expand-button {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  padding-left: 5px;
+  /* Adjust this to change the vertical position */
+  transform: translateY(-60%);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  width: 50px;
+  /* Initial width */
+  text-indent: 150%;
+  /* Hide text initially */
+}
+
+#expand-button:hover {
+  width: 100px;
+  /* Expanded width */
+
+  /* Adjusted padding on hover */
+  text-indent: 0;
+  /* Show text on hover */
+}
