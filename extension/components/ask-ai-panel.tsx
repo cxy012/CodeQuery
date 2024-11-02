@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -14,6 +13,14 @@ import { useMutation } from "react-query"
 import { useModelConfig } from "./hooks/useModelConfigsContext"
 import { useRepoMetaData } from "./hooks/useRepoinfo"
 import { useSelectionListener } from "./hooks/useSelectionListener"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "./ui/dropdown-menu"
 
 type CodeSelectMode = "code" | "context"
 
@@ -23,24 +30,23 @@ interface CodeContext {
   lineEnd: number
   code: string
 }
+const PROMPT_TEMPLATE =
+  "Explain what the selected code does in simple terms under given code context if provided. Assume the audience is a beginner programmer who has just " +
+  "learned the language features and basic syntax. The response should be plaintext, no markdown syntax included."
 
 export default function AskAIPanel() {
-  const { ModelConfig } = useModelConfig()
   const [promptInput, setPromptInput] = useState(
-    ModelConfig ? ModelConfig.prompt : ""
+    PROMPT_TEMPLATE ? PROMPT_TEMPLATE : ""
   )
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
-  // const editor = useMemo(() => withTReact(createPlateEditor({ plugins })), [])
-  const [prompt, setPrompt] = useState(promptInput)
-
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<CodeContext>()
   const [selectedCodeContextForAI, setSelectedCodeContextForAI] = useState<
     CodeContext[]
   >([])
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
+  const [modelType, setModelType] = useState("flash")
 
-  // const { isPrivate } = useRepoMetaData()
-  const  isPrivate =false;
+  const isPrivate = false
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
     onSelectCode: (code, lineStart, lineEnd, filePath) => {
@@ -56,6 +62,7 @@ export default function AskAIPanel() {
       setCodeSelectMode(undefined)
     }
   })
+
   const handleDeleteContextCode = (
     lineStart: number,
     lineEnd: number,
@@ -84,12 +91,12 @@ export default function AskAIPanel() {
         newPrompt += `${codeContext.filePath}:${codeContext.lineStart}-${codeContext.lineEnd}\n${codeContext.code}\n\n`
       })
     }
-    setPrompt(newPrompt)
-  }, [promptInput, selectedCodeForAI, selectedCodeContextForAI])
+    setPromptInput(newPrompt)
+  }, [selectedCodeForAI, selectedCodeContextForAI])
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(prompt)
+      await navigator.clipboard.writeText(promptInput)
       setStatusMessage("Prompt copied to clipboard successfully!")
     } catch (err) {
       console.error(err)
@@ -100,17 +107,14 @@ export default function AskAIPanel() {
   const askAIMutation = useMutation(
     (prompt: string) =>
       axios
-        .post(`${process.env.PLASMO_PUBLIC_BACKEND_URL}api/ai/generate-text`, {
-          modelConfigId: ModelConfig!.id,
-          prompt: prompt
+        .post(`http://localhost:3000/api/generate-text`, {
+          prompt,
+          modelType
         })
         .then((res) => res.data),
     {
       onSuccess: (data: any) => {
-        // if (editor) {
-        //   editor.insertNode(deserializeMd(editor, data.text))
-        //   setStatusMessage("AI response generated successfully!")
-        // }
+        setStatusMessage("AI response generated successfully!")
       },
       onError: (err: Error) => {
         console.error(err)
@@ -135,13 +139,28 @@ export default function AskAIPanel() {
       )}
       <>
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
-          {ModelConfig && (
-            <div className="flex justify-between">
-              <Badge variant="secondary" className="h-5 cursor-pointer">
-                {ModelConfig.name}
-              </Badge>
-            </div>
-          )}
+          <div className="flex justify-between">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Model:{" "}
+                  <Badge className="ml-2">
+                    {modelType === "flash"
+                      ? "Gemini 1.5 Flash"
+                      : "Gemini 1.5 Pro"}
+                  </Badge>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setModelType("flash")}>
+                  Gemini 1.5 Flash
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setModelType("pro")}>
+                  Gemini 1.5 Pro
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
           <div className="flex flex-col gap-1.5 mt-4">
             <div className="flex justify-between">
@@ -157,7 +176,7 @@ export default function AskAIPanel() {
               </Button>
             </div>
             <div className="text-xs text-gray-500">
-              {prompt.length} characters
+              {promptInput.length} characters
             </div>
             <Textarea
               className="text-xs overflow-hidden"
@@ -258,10 +277,6 @@ export default function AskAIPanel() {
                 setCodeSelectMode(undefined)
                 setSelectedCodeForAI(undefined)
                 setSelectedCodeContextForAI([])
-                // editor.reset = () => {
-                //   editor.children = [{ type: "p", children: [{ text: "" }] }]
-                //   editor.onChange()
-                // }
               }}
               size="sm"
               variant="secondary">
@@ -276,12 +291,6 @@ export default function AskAIPanel() {
               <Button
                 onClick={(e) => {
                   e.preventDefault()
-                  if (!ModelConfig) {
-                    setStatusMessage(
-                      "Please setup your ai model before ask ai."
-                    )
-                    return
-                  }
                   if (
                     !selectedCodeForAI &&
                     selectedCodeContextForAI.length === 0
@@ -291,9 +300,7 @@ export default function AskAIPanel() {
                     )
                     return
                   }
-                  console.log(selectedCodeContextForAI)
-                  console.log(selectedCodeForAI)
-                  askAIMutation.mutate(prompt)
+                  askAIMutation.mutate(promptInput)
                 }}
                 size="sm"
                 variant="outline"
@@ -306,10 +313,9 @@ export default function AskAIPanel() {
 
           {askAIMutation.data && (
             <div className="my-4">
-              <Textarea />
+              <Textarea value={askAIMutation.data.text} readOnly />
             </div>
           )}
-
           {statusMessage && (
             <div className="text-sm text-foreground mt-2">{statusMessage}</div>
           )}
