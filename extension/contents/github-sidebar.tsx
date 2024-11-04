@@ -4,10 +4,7 @@ import { ChevronLeft } from "lucide-react"
 import { useTheme } from "next-themes"
 import type { PlasmoCSConfig } from "plasmo"
 import { useEffect, useState } from "react"
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "react-query"
+import { QueryClient, QueryClientProvider } from "react-query"
 
 import AskAiPanel from "~components/ask-ai-panel"
 import SearchAIPanel from "~components/search-ai-panel"
@@ -16,10 +13,14 @@ import { Button } from "~components/ui/button"
 // Inject to the webpage itself
 import "../css/github-sidebar-base.css"
 
+import { useGithubRepoMeta } from "@/components/hooks/GithubRepoMetaContext"
 import { ThemeProvider } from "next-themes"
 
-import { GithubRepoMetaProvider } from "~components/hooks/GithubRepoMetaContext"
 import { ModelConfigProvider } from "~components/hooks/useModelConfigsContext"
+import {
+  RepoMetaDataProvider,
+  useRepoMetaData
+} from "~components/hooks/useRepoinfo"
 
 export const config: PlasmoCSConfig = {
   matches: ["https://github.com/*"]
@@ -41,11 +42,11 @@ function App() {
   return (
     <ThemeProvider attribute="class">
       <QueryClientProvider client={queryClient}>
-        <GithubRepoMetaProvider>
+        <RepoMetaDataProvider>
           <ModelConfigProvider>
             <Sidebar />
           </ModelConfigProvider>
-        </GithubRepoMetaProvider>
+        </RepoMetaDataProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )
@@ -55,7 +56,10 @@ const Sidebar = () => {
   // control the open or close of the sidebar
   const [shown, setShown] = useState(false)
 
-  const [activeAITab, setActiveAITab] = useState("ask")
+  const [activeAITab, setActiveAITab] = useState("search")
+  const { owner, repo, treeSHA, ref_type, filePath, pageType, isPrivate } =
+    useRepoMetaData()
+  const repoMeta = useGithubRepoMeta()
 
   const { theme, setTheme } = useTheme()
 
@@ -104,18 +108,18 @@ const Sidebar = () => {
               <Button
                 className={"flex-1 px-4 py-2 text-foreground"}
                 variant={activeAITab === "ask" ? "secondary" : "ghost"}
-                onClick={() => setActiveAITab("ask")}>
-                Ask AI
-              </Button>
-              <Button
-                className={"flex-1 px-4 py-2 text-foreground"}
-                variant={activeAITab === "search" ? "secondary" : "ghost"}
                 onClick={() => setActiveAITab("search")}>
                 Search with AI
               </Button>
+              <Button
+                className={"flex-1 px-4 py-2 text-foreground"}
+                variant={activeAITab === "ask" ? "secondary" : "ghost"}
+                onClick={() => setActiveAITab("ask")}>
+                Ask AI
+              </Button>
             </div>
-            {activeAITab === "ask" && <AskAiPanel />}
             {activeAITab === "search" && <SearchAIPanel />}
+            {activeAITab === "ask" && <AskAiPanel />}
           </div>
 
           <div className="absolute right-4 top-4 flex">

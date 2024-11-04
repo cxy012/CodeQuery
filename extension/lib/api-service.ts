@@ -9,7 +9,7 @@ export const fetchModelInfos = async () => {
 
 export const fetchRepoLanguages = async (owner: string, repo: string) => {
   const response = await axios.get(
-    `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/github/repos/${owner}/${repo}/languages`,
+    `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/github/${owner}/${repo}/languages`,
     {
       params: { owner, repo }
     }
@@ -41,7 +41,7 @@ export const fetchRepoMeta = async (
 ) => {
   try {
     const response = await axios.get(
-      `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/extension/repo-meta`,
+      `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/github/repo-meta`,
       {
         params: { owner, repo, treeSHA, ref_type }
       }

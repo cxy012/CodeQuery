@@ -1,6 +1,6 @@
 import { Octokit } from "octokit";
 
-function getOctokit() {
+export function getOctokit() {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     throw new Error("GitHub token is missing in environment variables");
