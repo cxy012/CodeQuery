@@ -5,12 +5,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { useCompletion } from "ai/react"
 import axios from "axios"
 import { Clipboard, Loader2, Trash } from "lucide-react"
+import React, { useEffect, useMemo, useState } from "react"
 // import { plugins } from "@/lib/plugins"
 
 // import { deserializeMd } from "@udecode/plate-serializer-md"
-
-import React, { useEffect, useMemo, useState } from "react"
+import ReactMarkdown from "react-markdown"
 import { useMutation } from "react-query"
+import remarkGfm from "remark-gfm"
 
 import { useModelConfig } from "./hooks/useModelConfigsContext"
 import { useRepoMetaData } from "./hooks/useRepoinfo"
@@ -34,7 +35,7 @@ interface CodeContext {
 }
 const PROMPT_TEMPLATE =
   "Explain what the selected code does in simple terms under given code context if provided. Assume the audience is a beginner programmer who has just " +
-  "learned the language features and basic syntax. The response should be plaintext, no markdown syntax included."
+  "learned the language features and basic syntax."
 
 export default function AskAIPanel() {
   const [promptInput, setPromptInput] = useState(
@@ -334,7 +335,61 @@ export default function AskAIPanel() {
 
           {completion && (
             <div className="my-4">
-              <Textarea value={completion} rows={8} readOnly />
+              {/* <Textarea value={completion} rows={8} readOnly /> */}
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  // 表格样式
+                  table: ({ node, ...props }) => (
+                    <table
+                      className="border-collapse border border-slate-300 dark:border-slate-700"
+                      {...props}
+                    />
+                  ),
+                  tr: ({ node, ...props }) => (
+                    <tr
+                      className="border-b border-slate-300 dark:border-slate-700"
+                      {...props}
+                    />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td
+                      className="border border-slate-300 dark:border-slate-700 px-4 py-2"
+                      {...props}
+                    />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th
+                      className="border border-slate-300 dark:border-slate-700 px-4 py-2 font-semibold"
+                      {...props}
+                    />
+                  ),
+                  // 任务列表样式
+                  li: ({ node, className, ...props }) => {
+                    if (className?.includes("task-list-item")) {
+                      return (
+                        <li className="flex items-start gap-2" {...props} />
+                      )
+                    }
+                    return <li {...props} />
+                  },
+                  // 代码块样式
+                  code({ node, inline, className, children, ...props }) {
+                    return (
+                      <code
+                        className={`${
+                          inline
+                            ? "bg-gray-200 dark:bg-gray-800 rounded px-1"
+                            : "block bg-gray-200 dark:bg-gray-800 p-4 rounded"
+                        }`}
+                        {...props}>
+                        {children}
+                      </code>
+                    )
+                  }
+                }}>
+                {completion}
+              </ReactMarkdown>
             </div>
           )}
           {statusMessage && (
