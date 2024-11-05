@@ -2,12 +2,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { useCompletion } from "ai/react"
+import axios from "axios"
+import { Clipboard, Loader2, Trash } from "lucide-react"
 // import { plugins } from "@/lib/plugins"
 
 // import { deserializeMd } from "@udecode/plate-serializer-md"
-import axios from "axios"
-import { Clipboard, Loader2, Trash } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
+
+import React, { useEffect, useMemo, useState } from "react"
 import { useMutation } from "react-query"
 
 import { useModelConfig } from "./hooks/useModelConfigsContext"
@@ -47,6 +49,17 @@ export default function AskAIPanel() {
   const [modelType, setModelType] = useState("flash")
 
   const isPrivate = false
+
+  const {
+    completion,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    setInput
+  } = useCompletion({
+    api: "http://localhost:3000/api/generate-text"
+  })
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
     onSelectCode: (code, lineStart, lineEnd, filePath) => {
@@ -81,7 +94,7 @@ export default function AskAIPanel() {
   }
 
   useEffect(() => {
-    let newPrompt = promptInput
+    let newPrompt = PROMPT_TEMPLATE
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
     }
@@ -91,6 +104,7 @@ export default function AskAIPanel() {
         newPrompt += `${codeContext.filePath}:${codeContext.lineStart}-${codeContext.lineEnd}\n${codeContext.code}\n\n`
       })
     }
+    setInput(newPrompt)
     setPromptInput(newPrompt)
   }, [selectedCodeForAI, selectedCodeContextForAI])
 
@@ -104,25 +118,25 @@ export default function AskAIPanel() {
     }
   }
 
-  const askAIMutation = useMutation(
-    (prompt: string) =>
-      axios
-        .post(`http://localhost:3000/api/generate-text`, {
-          prompt,
-          modelType
-        })
-        .then((res) => res.data),
-    {
-      onSuccess: (data: any) => {
-        setStatusMessage("AI response generated successfully!")
-      },
-      onError: (err: Error) => {
-        console.error(err)
-        setStatusMessage("Failed to generate AI response.")
-      }
-    }
-  )
-
+  // const askAIMutation = useMutation(
+  //   (prompt: string) =>
+  //     axios
+  //       .post(`http://localhost:3000/api/generate-text`, {
+  //         prompt,
+  //         modelType
+  //       })
+  //       .then((res) => res.data),
+  //   {
+  //     onSuccess: (data: any) => {
+  //       setStatusMessage("AI response generated successfully!")
+  //     },
+  //     onError: (err: Error) => {
+  //       console.error(err)
+  //       setStatusMessage("Failed to generate AI response.")
+  //     }
+  //   }
+  // )
+  const markdown = "# Hi, *Pluto*!"
   return (
     <>
       {isPrivate && (
@@ -282,7 +296,7 @@ export default function AskAIPanel() {
               variant="secondary">
               Reset
             </Button>
-            {askAIMutation.isLoading ? (
+            {isLoading ? (
               <Button size="sm" disabled>
                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                 Please wait
@@ -300,7 +314,8 @@ export default function AskAIPanel() {
                     )
                     return
                   }
-                  askAIMutation.mutate(promptInput)
+                  //askAIMutation.mutate(promptInput)
+                  handleSubmit()
                 }}
                 size="sm"
                 variant="outline"
@@ -310,10 +325,16 @@ export default function AskAIPanel() {
               </Button>
             )}
           </div>
-
+          {/* 
           {askAIMutation.data && (
             <div className="my-4">
               <Textarea value={askAIMutation.data.text} readOnly />
+            </div>
+          )} */}
+
+          {completion && (
+            <div className="my-4">
+              <Textarea value={completion} rows={8} readOnly />
             </div>
           )}
           {statusMessage && (
