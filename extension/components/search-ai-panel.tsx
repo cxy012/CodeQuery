@@ -13,19 +13,25 @@ import { useMutation } from "react-query"
 
 import { useRepoMetaData } from "~components/hooks/useRepoinfo"
 
-import { useModelConfig } from "./hooks/useModelConfigsContext"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuPortal,
+  DropdownMenuTrigger
+} from "./plate-ui/dropdown-menu"
 
 export default function SearchAIPanel() {
   const { owner, repo, isPrivate } = useRepoMetaData()
   const repoMeta = useGithubRepoMeta()
-  const { ModelConfig } = useModelConfig()
   const [languageOptions, setLanguageOptions] = useState<Option[]>([])
   const [selectedLanguages, setSelectedLanguages] = useState<Option[]>([])
   const [question, setQuestion] = useState<string>("")
   const [potentialPaths, setPotentialPaths] = useState<string[]>([])
   const [statusMessage, setStatusMessage] = useState<string>("")
-
+  const [modelType, setModelType] = useState("flash")
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false)
 
   useEffect(() => {
     const loadRepoLanguages = async () => {
@@ -57,14 +63,14 @@ export default function SearchAIPanel() {
   const { mutate: searchWithAI, isLoading: isSearchingAI } = useMutation({
     mutationFn: async () => {
       const response = await axios.post(
-        `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/ai/search-files`,
+        `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/search-files`,
         {
           question,
           owner,
           repo,
           languages: selectedLanguages.map((opt) => opt.value),
           treeSHA: repoMeta.treeSHA,
-          modelConfigId: ModelConfig.id
+          modelType
         },
         {
           timeout: 10000
@@ -96,7 +102,31 @@ export default function SearchAIPanel() {
           for more information.
         </div>
       )}
+
       <>
+        <div className="flex justify-between">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                Model:{" "}
+                <Badge className="ml-2">
+                  {modelType === "flash"
+                    ? "Gemini 1.5 Flash"
+                    : "Gemini 1.5 Pro"}
+                </Badge>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setModelType("flash")}>
+                Gemini 1.5 Flash
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setModelType("pro")}>
+                Gemini 1.5 Pro
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         <div className="flex justify-center pt-4 pb-5 px-2">
           <Textarea
             className="w-full focus-visible:ring-0"
