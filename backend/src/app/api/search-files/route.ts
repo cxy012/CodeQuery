@@ -14,6 +14,7 @@ const schema = z.object({
   repo: z.string(),
   treeSHA: z.string(),
   question: z.string(),
+  modelType: z.enum(["flash", "pro"]),
 });
 
 function pathGeneratePrompt(
@@ -23,6 +24,20 @@ function pathGeneratePrompt(
   filePathsForPrompt: string
 ): string {
   return `For answering ${owner}/${repo} github repo source code lookup question "${question}", provide me file paths may contains related code to the question from following github repository file paths. Don't include any test, type, design or doc files, only include core implementation logic files, and only show top 5 results. Provide the response in the same format as following file paths format without markdown format.\n\n\n${filePathsForPrompt}`;
+}
+
+export async function OPTIONS() {
+  return NextResponse.json(
+    {},
+    {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    }
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -37,17 +52,20 @@ export async function POST(req: NextRequest) {
         },
         {
           status: 400,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
         }
       );
     }
 
-    const { languages, owner, repo, treeSHA, question } = response.data;
+    const { languages, owner, repo, treeSHA, question, modelType } =
+      response.data;
 
     const apiKey = process.env.GOOGLE_AI_API_KEY;
-    const modelId = process.env.GOOGLE_MODEL_ID;
     const githubToken = process.env.GITHUB_TOKEN;
 
-    if (!apiKey || !modelId || !githubToken) {
+    if (!apiKey || !modelType || !githubToken) {
       return NextResponse.json(
         {
           error: {
@@ -55,7 +73,12 @@ export async function POST(req: NextRequest) {
               "API key, model ID, or GitHub token is missing in environment variables",
           },
         },
-        { status: 500 }
+        {
+          status: 500,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
@@ -72,13 +95,7 @@ export async function POST(req: NextRequest) {
       }
 
       const ext = getFileExtension(file.path);
-      if (ext === undefined) {
-        return false;
-      }
-      if (targetFileExtensions.has(ext)) {
-        return true;
-      }
-      return false;
+      return ext !== undefined && targetFileExtensions.has(ext);
     });
 
     const filePaths = targetFiles.map((file) => file.path);
@@ -90,12 +107,14 @@ export async function POST(req: NextRequest) {
       filePathsForPrompt
     );
 
+    const flashModelId = "models/gemini-1.5-flash";
+    const proModelId = "models/gemini-1.5-pro";
+    const modelId = modelType === "flash" ? flashModelId : proModelId;
+
     const google = createGoogleGenerativeAI({
       apiKey,
     });
-    const model = google(`models/${modelId}`, {
-      topK: 1,
-    });
+    const model = google(modelId);
 
     const { text } = await generateText({
       model,
@@ -105,12 +124,22 @@ export async function POST(req: NextRequest) {
     const pathSet = new Set(filePaths);
     const paths = text.split(/\r?\n/).filter((path) => pathSet.has(path));
 
-    return NextResponse.json(paths, { status: 200 });
+    return NextResponse.json(paths, {
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json(
       { error: { message: "Internal server error" } },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
     );
   }
 }
