@@ -13,14 +13,6 @@ import { useMutation } from "react-query"
 
 import { useRepoMetaData } from "~components/hooks/useRepoinfo"
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuTrigger
-} from "./plate-ui/dropdown-menu"
-
 export default function SearchAIPanel() {
   const { owner, repo, isPrivate } = useRepoMetaData()
   const repoMeta = useGithubRepoMeta()
@@ -29,9 +21,8 @@ export default function SearchAIPanel() {
   const [question, setQuestion] = useState<string>("")
   const [potentialPaths, setPotentialPaths] = useState<string[]>([])
   const [statusMessage, setStatusMessage] = useState<string>("")
-  const [modelType, setModelType] = useState("flash")
+  const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [dropdownOpen, setDropdownOpen] = useState<boolean>(false)
 
   useEffect(() => {
     const loadRepoLanguages = async () => {
@@ -59,7 +50,6 @@ export default function SearchAIPanel() {
     const url = `https://github.com/${owner}/${repo}/blob/${repoMeta.treeSHA}/${path}`
     window.open(url, "_self")
   }
-
   const { mutate: searchWithAI, isLoading: isSearchingAI } = useMutation({
     mutationFn: async () => {
       const response = await axios.post(
@@ -104,27 +94,17 @@ export default function SearchAIPanel() {
       )}
 
       <>
-        <div className="flex justify-between">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                Model:{" "}
-                <Badge className="ml-2">
-                  {modelType === "flash"
-                    ? "Gemini 1.5 Flash"
-                    : "Gemini 1.5 Pro"}
-                </Badge>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setModelType("flash")}>
-                Gemini 1.5 Flash
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setModelType("pro")}>
-                Gemini 1.5 Pro
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex gap-2 justify-start">
+          <Badge
+            className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+            onClick={() => setModelType("gemini-1.5-flash-latest")}>
+            Gemini 1.5 Flash
+          </Badge>
+          <Badge
+            className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+            onClick={() => setModelType("gemini-1.5-pro-latest")}>
+            Gemini 1.5 Pro
+          </Badge>
         </div>
 
         <div className="flex justify-center pt-4 pb-5 px-2">

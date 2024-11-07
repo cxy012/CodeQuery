@@ -10,20 +10,10 @@ import React, { useEffect, useMemo, useState } from "react"
 
 // import { deserializeMd } from "@udecode/plate-serializer-md"
 import ReactMarkdown from "react-markdown"
-import { useMutation } from "react-query"
 import remarkGfm from "remark-gfm"
 
-import { useModelConfig } from "./hooks/useModelConfigsContext"
 import { useRepoMetaData } from "./hooks/useRepoinfo"
 import { useSelectionListener } from "./hooks/useSelectionListener"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "./ui/dropdown-menu"
 
 type CodeSelectMode = "code" | "context"
 
@@ -47,7 +37,7 @@ export default function AskAIPanel() {
     CodeContext[]
   >([])
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
-  const [modelType, setModelType] = useState("flash")
+  const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
 
   const isPrivate = false
 
@@ -59,7 +49,7 @@ export default function AskAIPanel() {
     isLoading,
     setInput
   } = useCompletion({
-    api: "http://localhost:3000/api/generate-text"
+    api: `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/generate-text?modelType=${modelType}`
   })
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
@@ -119,25 +109,6 @@ export default function AskAIPanel() {
     }
   }
 
-  // const askAIMutation = useMutation(
-  //   (prompt: string) =>
-  //     axios
-  //       .post(`http://localhost:3000/api/generate-text`, {
-  //         prompt,
-  //         modelType
-  //       })
-  //       .then((res) => res.data),
-  //   {
-  //     onSuccess: (data: any) => {
-  //       setStatusMessage("AI response generated successfully!")
-  //     },
-  //     onError: (err: Error) => {
-  //       console.error(err)
-  //       setStatusMessage("Failed to generate AI response.")
-  //     }
-  //   }
-  // )
-  const markdown = "# Hi, *Pluto*!"
   return (
     <>
       {isPrivate && (
@@ -154,27 +125,17 @@ export default function AskAIPanel() {
       )}
       <>
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
-          <div className="flex justify-between">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Model:{" "}
-                  <Badge className="ml-2">
-                    {modelType === "flash"
-                      ? "Gemini 1.5 Flash"
-                      : "Gemini 1.5 Pro"}
-                  </Badge>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setModelType("flash")}>
-                  Gemini 1.5 Flash
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setModelType("pro")}>
-                  Gemini 1.5 Pro
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex gap-2 justify-start">
+            <Badge
+              className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+              onClick={() => setModelType("gemini-1.5-pro-latest")}>
+              Gemini 1.5 Flash
+            </Badge>
+            <Badge
+              className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+              onClick={() => setModelType("gemini-1.5-pro-latest")}>
+              Gemini 1.5 Pro
+            </Badge>
           </div>
 
           <div className="flex flex-col gap-1.5 mt-4">
@@ -315,7 +276,6 @@ export default function AskAIPanel() {
                     )
                     return
                   }
-                  //askAIMutation.mutate(promptInput)
                   handleSubmit()
                 }}
                 size="sm"
@@ -326,12 +286,6 @@ export default function AskAIPanel() {
               </Button>
             )}
           </div>
-          {/* 
-          {askAIMutation.data && (
-            <div className="my-4">
-              <Textarea value={askAIMutation.data.text} readOnly />
-            </div>
-          )} */}
 
           {completion && (
             <div className="my-4">
@@ -339,7 +293,7 @@ export default function AskAIPanel() {
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
-                  // 表格样式
+                  // table
                   table: ({ node, ...props }) => (
                     <table
                       className="border-collapse border border-slate-300 dark:border-slate-700"
@@ -364,7 +318,7 @@ export default function AskAIPanel() {
                       {...props}
                     />
                   ),
-                  // 任务列表样式
+                  // task-list-item
                   li: ({ node, className, ...props }) => {
                     if (className?.includes("task-list-item")) {
                       return (
@@ -373,7 +327,7 @@ export default function AskAIPanel() {
                     }
                     return <li {...props} />
                   },
-                  // 代码块样式
+                  // code block
                   code({ node, inline, className, children, ...props }) {
                     return (
                       <code

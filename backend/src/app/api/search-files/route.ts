@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { fetchRepoFiles } from "@/lib/github-api-client";
@@ -14,7 +15,7 @@ const schema = z.object({
   repo: z.string(),
   treeSHA: z.string(),
   question: z.string(),
-  modelType: z.enum(["flash", "pro"]),
+  modelType: z.enum(["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"]),
 });
 
 function pathGeneratePrompt(
@@ -25,7 +26,6 @@ function pathGeneratePrompt(
 ): string {
   return `For answering ${owner}/${repo} github repo source code lookup question "${question}", provide me file paths may contains related code to the question from following github repository file paths. Don't include any test, type, design or doc files, only include core implementation logic files, and only show top 5 results. Provide the response in the same format as following file paths format without markdown format.\n\n\n${filePathsForPrompt}`;
 }
-
 export async function OPTIONS() {
   return NextResponse.json(
     {},
@@ -83,7 +83,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { tree: files } = await fetchRepoFiles(owner, repo, treeSHA);
-
     const extensions = languages.flatMap((language) =>
       getExtensionByLanguage(language)
     );
@@ -107,14 +106,12 @@ export async function POST(req: NextRequest) {
       filePathsForPrompt
     );
 
-    const flashModelId = "models/gemini-1.5-flash";
-    const proModelId = "models/gemini-1.5-pro";
-    const modelId = modelType === "flash" ? flashModelId : proModelId;
-
     const google = createGoogleGenerativeAI({
-      apiKey,
+      apiKey: process.env.GOOGLE_AI_API_KEY,
     });
-    const model = google(modelId);
+    const model = google(`models/${modelType}`, {
+      topK: 1,
+    });
 
     const { text } = await generateText({
       model,

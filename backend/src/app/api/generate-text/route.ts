@@ -4,6 +4,7 @@ import { streamText } from "ai";
 
 export async function POST(req: NextRequest) {
   try {
+    const modelType = req.nextUrl.searchParams.get("modelType");
     const { prompt }: { prompt: string } = await req.json();
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
@@ -24,11 +25,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const flashModelId = "models/gemini-1.5-flash";
-    const proModelId = "models/gemini-1.5-pro";
-
     const google = createGoogleGenerativeAI({ apiKey });
-    const model = google(flashModelId);
+    const model = google(`models/${modelType}`);
 
     const stream = await streamText({ model, prompt: prompt });
     const origin = req.headers.get("origin") ?? "*";

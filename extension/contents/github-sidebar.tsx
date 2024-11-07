@@ -16,7 +16,6 @@ import "../css/github-sidebar-base.css"
 import { useGithubRepoMeta } from "@/components/hooks/GithubRepoMetaContext"
 import { ThemeProvider } from "next-themes"
 
-import { ModelConfigProvider } from "~components/hooks/useModelConfigsContext"
 import {
   RepoMetaDataProvider,
   useRepoMetaData
@@ -43,9 +42,7 @@ function App() {
     <ThemeProvider attribute="class">
       <QueryClientProvider client={queryClient}>
         <RepoMetaDataProvider>
-          <ModelConfigProvider>
-            <Sidebar />
-          </ModelConfigProvider>
+          <Sidebar />
         </RepoMetaDataProvider>
       </QueryClientProvider>
     </ThemeProvider>
@@ -55,31 +52,16 @@ function App() {
 const Sidebar = () => {
   // control the open or close of the sidebar
   const [shown, setShown] = useState(false)
-
-  const [activeAITab, setActiveAITab] = useState("search")
   const { owner, repo, treeSHA, ref_type, filePath, pageType, isPrivate } =
     useRepoMetaData()
   const repoMeta = useGithubRepoMeta()
-
+  const [activeAITab, setActiveAITab] = useState("search")
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     document.body.classList.toggle("plasmo-sidebar-show", shown)
     const githubTheme = document.documentElement.getAttribute("data-color-mode")
     setTheme(githubTheme === "dark" ? "dark" : "light")
-
-    // close the sidebar when there is no code textarea
-    const handleDetectCodeArea = () => {
-      const codeArea = document.querySelector("#read-only-cursor-text-area")
-      if (codeArea == null) {
-        setShown(false)
-      }
-    }
-    window.addEventListener("click", handleDetectCodeArea)
-
-    return () => {
-      window.removeEventListener("click", handleDetectCodeArea)
-    }
   }, [shown, setTheme])
 
   return (
@@ -103,10 +85,10 @@ const Sidebar = () => {
           theme === "dark" ? "dark" : "light"
         }`}>
         <div className="flex flex-col h-full">
-          <div className="ml-auto ">
+          <div className="ml-auto">
             <Button
               className="p-2 fill-foreground"
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={(e) => {
                 e.preventDefault()
@@ -115,24 +97,38 @@ const Sidebar = () => {
               <Cross1Icon className="h-4 w-4" />
             </Button>
           </div>
-          <div className="mb-2">
-            <div className="flex my-4">
-              <Button
-                className={"flex-1 px-4 py-2 text-foreground"}
-                variant={activeAITab === "ask" ? "ghost" : "secondary"}
-                onClick={() => setActiveAITab("search")}>
-                Search with AI
-              </Button>
-              <Button
-                className={"flex-1 px-4 py-2 text-foreground"}
-                variant={activeAITab === "ask" ? "secondary" : "ghost"}
-                onClick={() => setActiveAITab("ask")}>
-                Ask AI
-              </Button>
+          {pageType === "blob" || pageType === "repo" ? (
+            <div className="mb-2">
+              <div className="flex gap-2 my-4">
+                <Button
+                  className={"flex-1 px-4 py-2 text-foreground rounded-md"}
+                  variant={activeAITab === "search" ? "secondary" : "ghost"}
+                  onClick={() => setActiveAITab("search")}>
+                  Search with AI
+                </Button>
+                <Button
+                  className={"flex-1 px-4 py-2 text-foreground rounded-md"}
+                  variant={activeAITab === "ask" ? "secondary" : "ghost"}
+                  onClick={() => setActiveAITab("ask")}>
+                  Ask AI
+                </Button>
+              </div>
+
+              {activeAITab === "search" && <SearchAIPanel />}
+              {activeAITab === "ask" && <AskAiPanel />}
             </div>
-            {activeAITab === "search" && <SearchAIPanel />}
-            {activeAITab === "ask" && <AskAiPanel />}
-          </div>
+          ) : (
+            <div className="absolute top-1/2 transform -translate-y-1/2 text-center text-m text-black">
+              AI assistant is only available on file or repository home pages.
+              Please visit the{" "}
+              <a
+                href="https://dashboard.coexplain.com/dashboard"
+                className="text-blue-500 underline">
+                dashboard
+              </a>{" "}
+              for more information.
+            </div>
+          )}
         </div>
       </div>
     </div>
