@@ -3,12 +3,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useCompletion } from "ai/react"
-import axios from "axios"
 import { Clipboard, Loader2, Trash } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
-// import { plugins } from "@/lib/plugins"
-
-// import { deserializeMd } from "@udecode/plate-serializer-md"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -113,22 +109,15 @@ export default function AskAIPanel() {
     <>
       {isPrivate && (
         <div className="text-center text-sm mt-4 text-black">
-          This extension is only available for public repositories. Please visit
-          the{" "}
-          <a
-            href="https://dashboard.coexplain.com/dashboard"
-            className="text-blue-500 underline">
-            dashboard
-          </a>{" "}
-          for more information.
+          This extension is only available for public repositories.
         </div>
       )}
       <>
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
           <div className="flex gap-2 justify-start">
             <Badge
-              className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-              onClick={() => setModelType("gemini-1.5-pro-latest")}>
+              className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+              onClick={() => setModelType("gemini-1.5-flash-latest")}>
               Gemini 1.5 Flash
             </Badge>
             <Badge
@@ -157,6 +146,7 @@ export default function AskAIPanel() {
             <Textarea
               className="text-xs overflow-hidden"
               id="prompt"
+              onKeyDown={(e) => e.stopPropagation()}
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
             />

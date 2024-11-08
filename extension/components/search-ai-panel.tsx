@@ -82,14 +82,7 @@ export default function SearchAIPanel() {
     <>
       {isPrivate && (
         <div className="text-center text-sm mt-4 text-black">
-          This extension is only available for public repositories. Please visit
-          the{" "}
-          <a
-            href="https://dashboard.coexplain.com/dashboard"
-            className="text-blue-500 underline">
-            dashboard
-          </a>{" "}
-          for more information.
+          This extension is only available for public repositories.
         </div>
       )}
 
