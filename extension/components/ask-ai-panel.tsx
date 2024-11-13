@@ -4,11 +4,11 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useCompletion } from "ai/react"
 import { Clipboard, Loader2, Trash } from "lucide-react"
-import React, { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-import { useRepoMetaData } from "./hooks/useRepoinfo"
+import predefinedPrompts from "../lib/predefined-prompts"
 import { useSelectionListener } from "./hooks/useSelectionListener"
 
 type CodeSelectMode = "code" | "context"
@@ -19,14 +19,9 @@ interface CodeContext {
   lineEnd: number
   code: string
 }
-const PROMPT_TEMPLATE =
-  "Explain what the selected code does in simple terms under given code context if provided. Assume the audience is a beginner programmer who has just " +
-  "learned the language features and basic syntax."
 
 export default function AskAIPanel() {
-  const [promptInput, setPromptInput] = useState(
-    PROMPT_TEMPLATE ? PROMPT_TEMPLATE : ""
-  )
+  const [promptInput, setPromptInput] = useState("")
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<CodeContext>()
   const [selectedCodeContextForAI, setSelectedCodeContextForAI] = useState<
@@ -34,13 +29,12 @@ export default function AskAIPanel() {
   >([])
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
   const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
+  const [selectedPrompt, setSelectedPrompt] = useState<string>("")
 
   const isPrivate = false
 
   const {
     completion,
-    input,
-    handleInputChange,
     handleSubmit,
     isLoading,
     setInput,
@@ -49,6 +43,7 @@ export default function AskAIPanel() {
   } = useCompletion({
     api: `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/generate-text?modelType=${modelType}`
   })
+
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
     onSelectCode: (code, lineStart, lineEnd, filePath) => {
@@ -83,7 +78,7 @@ export default function AskAIPanel() {
   }
 
   useEffect(() => {
-    let newPrompt = PROMPT_TEMPLATE
+    let newPrompt = selectedPrompt
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
     }
@@ -94,8 +89,7 @@ export default function AskAIPanel() {
       })
     }
     setInput(newPrompt)
-    setPromptInput(newPrompt)
-  }, [selectedCodeForAI, selectedCodeContextForAI])
+  }, [selectedCodeForAI, selectedCodeContextForAI, selectedPrompt])
 
   async function handleCopy() {
     try {
@@ -118,22 +112,59 @@ export default function AskAIPanel() {
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
           {!completion && (
             <div>
-              <div className="flex gap-2 justify-start">
-                <Badge
-                  className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-                  onClick={() => setModelType("gemini-1.5-flash-latest")}>
-                  Gemini 1.5 Flash
-                </Badge>
-                <Badge
-                  className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-                  onClick={() => setModelType("gemini-1.5-pro-latest")}>
-                  Gemini 1.5 Pro
-                </Badge>
+              {/* Model Selection Section */}
+              <div className="mt-4">
+                <Label className="font-bold text-lg">Select Model</Label>
+                <div className="flex gap-2 justify-start mt-2">
+                  <Badge
+                    className={`cursor-pointer ${
+                      modelType === "gemini-1.5-flash-latest"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
+                    }`}
+                    onClick={() => setModelType("gemini-1.5-flash-latest")}>
+                    Gemini 1.5 Flash
+                  </Badge>
+                  <Badge
+                    className={`cursor-pointer ${
+                      modelType === "gemini-1.5-pro-latest"
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-200 text-black"
+                    }`}
+                    onClick={() => setModelType("gemini-1.5-pro-latest")}>
+                    Gemini 1.5 Pro
+                  </Badge>
+                </div>
               </div>
 
-              <div className="flex flex-col gap-1.5 mt-4">
+              {/* Predefined Prompt Selection Section */}
+              <div className="mt-6">
+                <Label className="font-bold text-lg">
+                  Select Predefined Prompt
+                </Label>
+                <div className="flex gap-2 flex-wrap mt-2">
+                  {predefinedPrompts.map((prompt) => (
+                    <Badge
+                      key={prompt.label}
+                      className={`cursor-pointer ${
+                        selectedPrompt === prompt.text
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      }`}
+                      onClick={() => setSelectedPrompt(prompt.text)}>
+                      {prompt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Prompt Section */}
+              <div className="flex flex-col gap-1.5 mt-6">
+                <Label className="font-bold text-lg" htmlFor="prompt">
+                  Custom Prompt
+                </Label>
                 <div className="flex justify-between">
-                  <Label htmlFor="prompt">Prompt</Label>
+                  <Label htmlFor="prompt">Custom Prompt</Label>
                   <Button
                     onClick={(e) => {
                       e.preventDefault()
@@ -152,7 +183,10 @@ export default function AskAIPanel() {
                   id="prompt"
                   onKeyDown={(e) => e.stopPropagation()}
                   value={promptInput}
-                  onChange={(e) => setPromptInput(e.target.value)}
+                  onChange={(e) => {
+                    setPromptInput(e.target.value)
+                    setSelectedPrompt("")
+                  }}
                 />
               </div>
 
