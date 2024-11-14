@@ -120,13 +120,6 @@ const Sidebar = () => {
           ) : (
             <div className="absolute top-1/2 transform -translate-y-1/2 text-center text-m text-black">
               AI assistant is only available on file or repository home pages.
-              Please visit the{" "}
-              <a
-                href="https://dashboard.coexplain.com/dashboard"
-                className="text-blue-500 underline">
-                dashboard
-              </a>{" "}
-              for more information.
             </div>
           )}
         </div>

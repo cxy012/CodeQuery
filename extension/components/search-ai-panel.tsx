@@ -2,6 +2,7 @@ import { useGithubRepoMeta } from "@/components/hooks/GithubRepoMetaContext"
 import { ScrollArea } from "@/components/plate-ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
 import MultipleSelector from "@/components/ui/multiple-selector"
 import type { Option } from "@/components/ui/multiple-selector"
 import { Textarea } from "@/components/ui/textarea"
@@ -87,19 +88,21 @@ export default function SearchAIPanel() {
       )}
 
       <>
-        <div className="flex gap-2 justify-start">
-          <Badge
-            className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-            onClick={() => setModelType("gemini-1.5-flash-latest")}>
-            Gemini 1.5 Flash
-          </Badge>
-          <Badge
-            className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-            onClick={() => setModelType("gemini-1.5-pro-latest")}>
-            Gemini 1.5 Pro
-          </Badge>
+        <div className="mt-4">
+          <Label className="font-bold">Select Model</Label>
+          <div className="flex gap-2 justify-start">
+            <Badge
+              className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+              onClick={() => setModelType("gemini-1.5-flash-latest")}>
+              Gemini 1.5 Flash
+            </Badge>
+            <Badge
+              className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
+              onClick={() => setModelType("gemini-1.5-pro-latest")}>
+              Gemini 1.5 Pro
+            </Badge>
+          </div>
         </div>
-
         <div className="flex justify-center pt-4 pb-5 px-2">
           <Textarea
             className="w-full focus-visible:ring-0"

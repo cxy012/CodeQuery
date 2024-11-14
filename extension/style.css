@@ -106,26 +106,27 @@
 }
 
 #expand-button {
+  background: linear-gradient(135deg, hsl(210, 10%, 70%), hsl(210, 10%, 50%));
+  color: white;
+  border-radius: 8px;
+  font-size: 16px;
   position: fixed;
   right: 0;
   top: 50%;
-  padding-left: 5px;
-  /* Adjust this to change the vertical position */
-  transform: translateY(-60%);
+  width: 60px;
+  height: 40px;
+  transform: translateY(-50%);
   cursor: pointer;
   transition: all 0.3s ease;
-  overflow: hidden;
-  width: 50px;
-  /* Initial width */
-  text-indent: 150%;
-  /* Hide text initially */
+  border: 2px solid hsl(210, 10%, 40%);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(102, 153, 204, 0.5);
 }
 
 #expand-button:hover {
-  width: 100px;
-  /* Expanded width */
-
-  /* Adjusted padding on hover */
-  text-indent: 0;
-  /* Show text on hover */
+  background: linear-gradient(135deg, hsl(210, 10%, 60%), hsl(210, 10%, 40%));
+  border: 2px solid hsl(210, 10%, 50%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-50%) scale(1.1);
 }

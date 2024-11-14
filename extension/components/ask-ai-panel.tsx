@@ -114,7 +114,7 @@ export default function AskAIPanel() {
             <div>
               {/* Model Selection Section */}
               <div className="mt-4">
-                <Label className="font-bold text-lg">Select Model</Label>
+                <Label className="font-bold">Select Model</Label>
                 <div className="flex gap-2 justify-start mt-2">
                   <Badge
                     className={`cursor-pointer ${
@@ -139,9 +139,7 @@ export default function AskAIPanel() {
 
               {/* Predefined Prompt Selection Section */}
               <div className="mt-6">
-                <Label className="font-bold text-lg">
-                  Select Predefined Prompt
-                </Label>
+                <Label className="font-bold">Select Predefined Prompt</Label>
                 <div className="flex gap-2 flex-wrap mt-2">
                   {predefinedPrompts.map((prompt) => (
                     <Badge
@@ -160,9 +158,6 @@ export default function AskAIPanel() {
 
               {/* Custom Prompt Section */}
               <div className="flex flex-col gap-1.5 mt-6">
-                <Label className="font-bold text-lg" htmlFor="prompt">
-                  Custom Prompt
-                </Label>
                 <div className="flex justify-between">
                   <Label htmlFor="prompt">Custom Prompt</Label>
                   <Button
