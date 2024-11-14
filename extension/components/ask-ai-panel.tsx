@@ -35,6 +35,8 @@ export default function AskAIPanel() {
 
   const {
     completion,
+    input,
+    handleInputChange,
     handleSubmit,
     isLoading,
     setInput,
@@ -78,7 +80,9 @@ export default function AskAIPanel() {
   }
 
   useEffect(() => {
-    let newPrompt = selectedPrompt
+    // Determine which prompt to use based on whether custom or predefined prompt is selected
+    let newPrompt = promptInput || selectedPrompt
+
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
     }
@@ -89,11 +93,23 @@ export default function AskAIPanel() {
       })
     }
     setInput(newPrompt)
-  }, [selectedCodeForAI, selectedCodeContextForAI, selectedPrompt])
+  }, [selectedCodeForAI, selectedCodeContextForAI, selectedPrompt, promptInput])
+
+  const handlePredefinedPromptSelect = (promptText: string) => {
+    setSelectedPrompt(promptText)
+    setPromptInput("")
+  }
+
+  const handleCustomPromptChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
+    setPromptInput(e.target.value)
+    setSelectedPrompt("")
+  }
 
   async function handleCopy() {
     try {
-      await navigator.clipboard.writeText(promptInput)
+      await navigator.clipboard.writeText(promptInput || selectedPrompt)
       setStatusMessage("Prompt copied to clipboard successfully!")
     } catch (err) {
       console.error(err)
@@ -149,7 +165,7 @@ export default function AskAIPanel() {
                           ? "bg-blue-500 text-white"
                           : "bg-gray-200 text-black"
                       }`}
-                      onClick={() => setSelectedPrompt(prompt.text)}>
+                      onClick={() => handlePredefinedPromptSelect(prompt.text)}>
                       {prompt.label}
                     </Badge>
                   ))}
@@ -178,10 +194,8 @@ export default function AskAIPanel() {
                   id="prompt"
                   onKeyDown={(e) => e.stopPropagation()}
                   value={promptInput}
-                  onChange={(e) => {
-                    setPromptInput(e.target.value)
-                    setSelectedPrompt("")
-                  }}
+                  onChange={handleCustomPromptChange}
+                  placeholder="Enter your custom prompt here..."
                 />
               </div>
 
