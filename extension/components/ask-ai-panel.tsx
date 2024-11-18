@@ -2,11 +2,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useCompletion } from "ai/react"
 import { Clipboard, Loader2, Trash } from "lucide-react"
 import React, { useEffect, useState } from "react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
 
 import predefinedPrompts from "../lib/predefined-prompts"
 import { useSelectionListener } from "./hooks/useSelectionListener"
@@ -30,28 +27,18 @@ export default function AskAIPanel() {
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
   const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
   const [selectedPrompt, setSelectedPrompt] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [completion, setCompletion] = useState<string | null>(null)
 
   const isPrivate = false
-
-  const {
-    completion,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    setInput,
-    error,
-    setCompletion
-  } = useCompletion({
-    api: `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/generate-text?modelType=${modelType}`
-  })
 
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
     onSelectCode: (code, lineStart, lineEnd, filePath) => {
       const newCodeContext = { code, lineStart, lineEnd, filePath }
-      if (codeSelectMode === "code") setSelectedCodeForAI(newCodeContext)
-
+      if (codeSelectMode === "code") {
+        setSelectedCodeForAI(newCodeContext)
+      }
       if (codeSelectMode === "context") {
         setSelectedCodeContextForAI((prevContexts) => [
           ...prevContexts,
@@ -59,6 +46,7 @@ export default function AskAIPanel() {
         ])
       }
       setCodeSelectMode(undefined)
+      rebuildPrompt(newCodeContext)
     }
   })
 
@@ -77,11 +65,12 @@ export default function AskAIPanel() {
           )
       )
     )
+    rebuildPrompt()
   }
 
-  useEffect(() => {
-    // Determine which prompt to use based on whether custom or predefined prompt is selected
-    let newPrompt = promptInput || selectedPrompt
+  // rebuild Prompt
+  const rebuildPrompt = (newCodeContext?: CodeContext) => {
+    let newPrompt = selectedPrompt || promptInput
 
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
@@ -92,12 +81,14 @@ export default function AskAIPanel() {
         newPrompt += `${codeContext.filePath}:${codeContext.lineStart}-${codeContext.lineEnd}\n${codeContext.code}\n\n`
       })
     }
-    setInput(newPrompt)
-  }, [selectedCodeForAI, selectedCodeContextForAI, selectedPrompt, promptInput])
+
+    setPromptInput(newPrompt)
+  }
 
   const handlePredefinedPromptSelect = (promptText: string) => {
     setSelectedPrompt(promptText)
     setPromptInput("")
+    rebuildPrompt()
   }
 
   const handleCustomPromptChange = (
@@ -105,6 +96,36 @@ export default function AskAIPanel() {
   ) => {
     setPromptInput(e.target.value)
     setSelectedPrompt("")
+  }
+
+  async function handleSendPrompt() {
+    if (!promptInput) {
+      setStatusMessage("Please enter a prompt.")
+      return
+    }
+    try {
+      setIsLoading(true)
+      const { available } = await (
+        window as any
+      ).ai.languageModel.capabilities()
+
+      if (available !== "no") {
+        const session = await (window as any).ai.languageModel.create()
+        const stream = session.promptStreaming(promptInput)
+
+        setCompletion("") // Start with an empty completion
+        for await (const chunk of stream) {
+          setCompletion((prev) => (prev ?? "") + chunk)
+        }
+      } else {
+        setStatusMessage("Model is not available currently.")
+      }
+    } catch (error) {
+      console.error("Prompt failed:", error)
+      setStatusMessage("Error occurred while processing your request.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   async function handleCopy() {
@@ -260,7 +281,9 @@ export default function AskAIPanel() {
 
                 {selectedCodeContextForAI.length > 0 ? (
                   selectedCodeContextForAI.map((code) => (
-                    <div className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50">
+                    <div
+                      key={`${code.filePath}-${code.lineStart}-${code.lineEnd}`}
+                      className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50">
                       <pre className="whitespace-pre-wrap">{`${code.filePath}:${code.lineStart}-${code.lineEnd}`}</pre>
                       <Button
                         onClick={() =>
@@ -313,7 +336,7 @@ export default function AskAIPanel() {
                         )
                         return
                       }
-                      handleSubmit()
+                      handleSendPrompt()
                     }}
                     size="sm"
                     variant="outline"
@@ -325,7 +348,6 @@ export default function AskAIPanel() {
               </div>
             </div>
           )}
-          {error && <div className="text-red-500">{error.message}</div>}
           {completion && (
             <div className="my-4">
               <Button
@@ -335,60 +357,7 @@ export default function AskAIPanel() {
                 onClick={() => setCompletion(null)}>
                 back
               </Button>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // table
-                  table: ({ node, ...props }) => (
-                    <table
-                      className="border-collapse border border-slate-300 dark:border-slate-700"
-                      {...props}
-                    />
-                  ),
-                  tr: ({ node, ...props }) => (
-                    <tr
-                      className="border-b border-slate-300 dark:border-slate-700"
-                      {...props}
-                    />
-                  ),
-                  td: ({ node, ...props }) => (
-                    <td
-                      className="border border-slate-300 dark:border-slate-700 px-4 py-2"
-                      {...props}
-                    />
-                  ),
-                  th: ({ node, ...props }) => (
-                    <th
-                      className="border border-slate-300 dark:border-slate-700 px-4 py-2 font-semibold"
-                      {...props}
-                    />
-                  ),
-                  // task-list-item
-                  li: ({ node, className, ...props }) => {
-                    if (className?.includes("task-list-item")) {
-                      return (
-                        <li className="flex items-start gap-2" {...props} />
-                      )
-                    }
-                    return <li {...props} />
-                  },
-                  // code block
-                  code({ node, inline, className, children, ...props }) {
-                    return (
-                      <code
-                        className={`${
-                          inline
-                            ? "bg-gray-200 dark:bg-gray-800 rounded px-1"
-                            : "block bg-gray-200 dark:bg-gray-800 p-4 rounded"
-                        }`}
-                        {...props}>
-                        {children}
-                      </code>
-                    )
-                  }
-                }}>
-                {completion}
-              </ReactMarkdown>
+              <div className="whitespace-pre-wrap text-sm">{completion}</div>
             </div>
           )}
           {statusMessage && (
