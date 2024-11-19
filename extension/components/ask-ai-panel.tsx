@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { MarkdownRenderer } from "@/lib/markdownRenderer"
 import { Clipboard, Loader2, Trash } from "lucide-react"
 import React, { useEffect, useState } from "react"
 
@@ -357,7 +358,8 @@ export default function AskAIPanel() {
                 onClick={() => setCompletion(null)}>
                 back
               </Button>
-              <div className="whitespace-pre-wrap text-sm">{completion}</div>
+              {/* <div className="whitespace-pre-wrap text-sm">{completion}</div> */}
+              <MarkdownRenderer markdown={completion} />
             </div>
           )}
           {statusMessage && (
