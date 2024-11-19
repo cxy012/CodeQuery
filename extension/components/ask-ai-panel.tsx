@@ -26,7 +26,6 @@ export default function AskAIPanel() {
     CodeContext[]
   >([])
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
-  const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
   const [selectedPrompt, setSelectedPrompt] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [completion, setCompletion] = useState<string | null>(null)
@@ -47,7 +46,6 @@ export default function AskAIPanel() {
         ])
       }
       setCodeSelectMode(undefined)
-      rebuildPrompt(newCodeContext)
     }
   })
 
@@ -66,11 +64,14 @@ export default function AskAIPanel() {
           )
       )
     )
-    rebuildPrompt()
   }
 
-  // rebuild Prompt
-  const rebuildPrompt = (newCodeContext?: CodeContext) => {
+  useEffect(() => {
+    // Determine which prompt to use based on whether custom or predefined prompt is selected
+    if (!promptInput && !selectedPrompt) {
+      return
+    }
+
     let newPrompt = selectedPrompt || promptInput
 
     if (selectedCodeForAI) {
@@ -84,12 +85,11 @@ export default function AskAIPanel() {
     }
 
     setPromptInput(newPrompt)
-  }
+  }, [selectedPrompt, promptInput, selectedCodeForAI, selectedCodeContextForAI])
 
   const handlePredefinedPromptSelect = (promptText: string) => {
     setSelectedPrompt(promptText)
     setPromptInput("")
-    rebuildPrompt()
   }
 
   const handleCustomPromptChange = (
@@ -113,7 +113,7 @@ export default function AskAIPanel() {
       if (available !== "no") {
         const session = await (window as any).ai.languageModel.create()
         const stream = session.promptStreaming(promptInput)
-
+        console.log(promptInput)
         setCompletion("") // Start with an empty completion
         for await (const chunk of stream) {
           setCompletion((prev) => (prev ?? "") + chunk)
@@ -150,33 +150,16 @@ export default function AskAIPanel() {
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
           {!completion && (
             <div>
-              {/* Model Selection Section */}
-              <div className="mt-4">
-                <Label className="font-bold">Select Model</Label>
-                <div className="flex gap-2 justify-start mt-2">
-                  <Badge
-                    className={`cursor-pointer ${
-                      modelType === "gemini-1.5-flash-latest"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-black"
-                    }`}
-                    onClick={() => setModelType("gemini-1.5-flash-latest")}>
-                    Gemini 1.5 Flash
-                  </Badge>
-                  <Badge
-                    className={`cursor-pointer ${
-                      modelType === "gemini-1.5-pro-latest"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-black"
-                    }`}
-                    onClick={() => setModelType("gemini-1.5-pro-latest")}>
-                    Gemini 1.5 Pro
-                  </Badge>
-                </div>
+              {/* Model Information Section */}
+              <Label className="font-bold">Current Model: </Label>
+              <div className="flex gap-2 justify-start mt-1">
+                <Badge className="bg-blue-500 text-white">
+                  Gemini Nano (Built-in Model)
+                </Badge>
               </div>
 
               {/* Predefined Prompt Selection Section */}
-              <div className="mt-6">
+              <div className="mt-4">
                 <Label className="font-bold">Select Predefined Prompt</Label>
                 <div className="flex gap-2 flex-wrap mt-2">
                   {predefinedPrompts.map((prompt) => (
@@ -197,7 +180,7 @@ export default function AskAIPanel() {
               {/* Custom Prompt Section */}
               <div className="flex flex-col gap-1.5 mt-6">
                 <div className="flex justify-between">
-                  <Label htmlFor="prompt">Custom Prompt</Label>
+                  <Label className="font-bold">Custom Prompt</Label>
                   <Button
                     onClick={(e) => {
                       e.preventDefault()
@@ -222,25 +205,24 @@ export default function AskAIPanel() {
               </div>
 
               {/* select code for AI */}
-              <div>
-                <div className="flex flex-col mt-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Target Code</Label>
-                    <Button
-                      onClick={() => {
-                        setCodeSelectMode("code")
-                        setSelectedCodeForAI(undefined)
-                      }}
-                      disabled={codeSelectMode === "code" || isPrivate}
-                      variant="outline"
-                      size="xs">
-                      Select
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 mb-2">
-                    Click [Select] to choose code for AI analysis.
-                  </p>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between">
+                  <Label>Target Code</Label>
+                  <Button
+                    onClick={() => {
+                      setCodeSelectMode("code")
+                      setSelectedCodeForAI(undefined)
+                    }}
+                    disabled={codeSelectMode === "code" || isPrivate}
+                    variant="outline"
+                    size="xs">
+                    Select
+                  </Button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 mb-2">
+                  Click [Select] to choose code for AI analysis.
+                </p>
+
                 <div
                   className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50"
                   id="selected-code">
@@ -262,23 +244,21 @@ export default function AskAIPanel() {
               </div>
 
               {/* select code context for AI */}
-              <div>
-                <div className="flex flex-col mt-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Context Code</Label>
-                    <Button
-                      onClick={() => setCodeSelectMode("context")}
-                      disabled={codeSelectMode === "context" || isPrivate}
-                      variant="outline"
-                      size="xs">
-                      Select
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 mb-2">
-                    Click [Select] to identify the relevant context code for AI
-                    analysis.
-                  </p>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between">
+                  <Label>Context Code</Label>
+                  <Button
+                    onClick={() => setCodeSelectMode("context")}
+                    disabled={codeSelectMode === "context" || isPrivate}
+                    variant="outline"
+                    size="xs">
+                    Select
+                  </Button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 mb-2">
+                  Click [Select] to identify the relevant context code for AI
+                  analysis.
+                </p>
 
                 {selectedCodeContextForAI.length > 0 ? (
                   selectedCodeContextForAI.map((code) => (
