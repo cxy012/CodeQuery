@@ -14,7 +14,7 @@ import { useEffect, useState } from "react"
 import { useRepoMetaData } from "~components/hooks/useRepoinfo"
 
 export default function SearchAIPanel() {
-  const { owner, repo, isPrivate } = useRepoMetaData()
+  const { owner, repo, isPrivate, treeSHA } = useRepoMetaData()
   const repoMeta = useGithubRepoMeta()
   const [languageOptions, setLanguageOptions] = useState<Option[]>([])
   const [selectedLanguages, setSelectedLanguages] = useState<Option[]>([])
@@ -48,7 +48,7 @@ export default function SearchAIPanel() {
   }, [owner, repo])
 
   const handleRedirect = (path: string) => {
-    const url = `https://github.com/${owner}/${repo}/blob/${repoMeta.treeSHA}/${path}`
+    const url = `https://github.com/${owner}/${repo}/blob/${treeSHA}/${path}`
     window.open(url, "_blank")
   }
 
