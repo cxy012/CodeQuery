@@ -113,8 +113,7 @@ export default function AskAIPanel() {
       if (available !== "no") {
         const session = await (window as any).ai.languageModel.create()
         const stream = session.promptStreaming(promptInput)
-        console.log(promptInput)
-        setCompletion("") // Start with an empty completion
+        setCompletion("")
         for await (const chunk of stream) {
           setCompletion((prev) => (prev ?? "") + chunk)
         }

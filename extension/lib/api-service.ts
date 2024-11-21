@@ -29,7 +29,6 @@ export const searchFilesWithAI = async (data: {
     `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/ai/search-files`,
     data
   )
-  console.log(response.data.paths)
   return response.data
 }
 
