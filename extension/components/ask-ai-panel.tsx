@@ -115,7 +115,7 @@ export default function AskAIPanel() {
         const stream = session.promptStreaming(promptInput)
         setCompletion("")
         for await (const chunk of stream) {
-          setCompletion((prev) => (prev ?? "") + chunk)
+          setCompletion(chunk)
         }
       } else {
         setStatusMessage("Model is not available currently.")
@@ -329,7 +329,7 @@ export default function AskAIPanel() {
             </div>
           )}
           {completion && (
-            <div className="my-4">
+            <div className="my-4 p-2">
               <Button
                 size="sm"
                 variant="outline"
