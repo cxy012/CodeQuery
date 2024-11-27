@@ -99,7 +99,7 @@ const Sidebar = () => {
           </div>
           {pageType === "blob" || pageType === "repo" ? (
             <div className="mb-2">
-              <div className="flex gap-2 my-4">
+              <div className="flex gap-2 my-2">
                 <Button
                   className={"flex-1 px-4 py-2 text-foreground rounded-md"}
                   variant={activeAITab === "search" ? "secondary" : "ghost"}

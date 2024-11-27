@@ -2,11 +2,9 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useCompletion } from "ai/react"
+import { MarkdownRenderer } from "@/lib/markdownRenderer"
 import { Clipboard, Loader2, Trash } from "lucide-react"
 import React, { useEffect, useState } from "react"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
 
 import predefinedPrompts from "../lib/predefined-prompts"
 import { useSelectionListener } from "./hooks/useSelectionListener"
@@ -28,30 +26,19 @@ export default function AskAIPanel() {
     CodeContext[]
   >([])
   const [codeSelectMode, setCodeSelectMode] = useState<CodeSelectMode>()
-  const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
   const [selectedPrompt, setSelectedPrompt] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [completion, setCompletion] = useState<string | null>(null)
 
   const isPrivate = false
-
-  const {
-    completion,
-    input,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-    setInput,
-    error,
-    setCompletion
-  } = useCompletion({
-    api: `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/generate-text?modelType=${modelType}`
-  })
 
   useSelectionListener({
     isSelectingCode: codeSelectMode !== undefined,
     onSelectCode: (code, lineStart, lineEnd, filePath) => {
       const newCodeContext = { code, lineStart, lineEnd, filePath }
-      if (codeSelectMode === "code") setSelectedCodeForAI(newCodeContext)
-
+      if (codeSelectMode === "code") {
+        setSelectedCodeForAI(newCodeContext)
+      }
       if (codeSelectMode === "context") {
         setSelectedCodeContextForAI((prevContexts) => [
           ...prevContexts,
@@ -81,7 +68,11 @@ export default function AskAIPanel() {
 
   useEffect(() => {
     // Determine which prompt to use based on whether custom or predefined prompt is selected
-    let newPrompt = promptInput || selectedPrompt
+    if (!promptInput && !selectedPrompt) {
+      return
+    }
+
+    let newPrompt = selectedPrompt || promptInput
 
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
@@ -92,8 +83,9 @@ export default function AskAIPanel() {
         newPrompt += `${codeContext.filePath}:${codeContext.lineStart}-${codeContext.lineEnd}\n${codeContext.code}\n\n`
       })
     }
-    setInput(newPrompt)
-  }, [selectedCodeForAI, selectedCodeContextForAI, selectedPrompt, promptInput])
+
+    setPromptInput(newPrompt)
+  }, [selectedPrompt, promptInput, selectedCodeForAI, selectedCodeContextForAI])
 
   const handlePredefinedPromptSelect = (promptText: string) => {
     setSelectedPrompt(promptText)
@@ -105,6 +97,35 @@ export default function AskAIPanel() {
   ) => {
     setPromptInput(e.target.value)
     setSelectedPrompt("")
+  }
+
+  async function handleSendPrompt() {
+    if (!promptInput) {
+      setStatusMessage("Please enter a prompt.")
+      return
+    }
+    try {
+      setIsLoading(true)
+      const { available } = await (
+        window as any
+      ).ai.languageModel.capabilities()
+
+      if (available !== "no") {
+        const session = await (window as any).ai.languageModel.create()
+        const stream = session.promptStreaming(promptInput)
+        setCompletion("")
+        for await (const chunk of stream) {
+          setCompletion(chunk)
+        }
+      } else {
+        setStatusMessage("Model is not available currently.")
+      }
+    } catch (error) {
+      console.error("Prompt failed:", error)
+      setStatusMessage("Error occurred while processing your request.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   async function handleCopy() {
@@ -128,33 +149,16 @@ export default function AskAIPanel() {
         <div className="mx-auto p-4 mb-2 ml-1 space-y-4 overflow-auto">
           {!completion && (
             <div>
-              {/* Model Selection Section */}
-              <div className="mt-4">
-                <Label className="font-bold">Select Model</Label>
-                <div className="flex gap-2 justify-start mt-2">
-                  <Badge
-                    className={`cursor-pointer ${
-                      modelType === "gemini-1.5-flash-latest"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-black"
-                    }`}
-                    onClick={() => setModelType("gemini-1.5-flash-latest")}>
-                    Gemini 1.5 Flash
-                  </Badge>
-                  <Badge
-                    className={`cursor-pointer ${
-                      modelType === "gemini-1.5-pro-latest"
-                        ? "bg-blue-500 text-white"
-                        : "bg-gray-200 text-black"
-                    }`}
-                    onClick={() => setModelType("gemini-1.5-pro-latest")}>
-                    Gemini 1.5 Pro
-                  </Badge>
-                </div>
+              {/* Model Information Section */}
+              <Label className="font-bold">Current Model: </Label>
+              <div className="flex gap-2 justify-start mt-1">
+                <Badge className="bg-blue-500 text-white">
+                  Gemini Nano (Built-in Model)
+                </Badge>
               </div>
 
               {/* Predefined Prompt Selection Section */}
-              <div className="mt-6">
+              <div className="mt-4">
                 <Label className="font-bold">Select Predefined Prompt</Label>
                 <div className="flex gap-2 flex-wrap mt-2">
                   {predefinedPrompts.map((prompt) => (
@@ -175,7 +179,7 @@ export default function AskAIPanel() {
               {/* Custom Prompt Section */}
               <div className="flex flex-col gap-1.5 mt-6">
                 <div className="flex justify-between">
-                  <Label htmlFor="prompt">Custom Prompt</Label>
+                  <Label className="font-bold">Custom Prompt</Label>
                   <Button
                     onClick={(e) => {
                       e.preventDefault()
@@ -200,25 +204,24 @@ export default function AskAIPanel() {
               </div>
 
               {/* select code for AI */}
-              <div>
-                <div className="flex flex-col mt-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Target Code</Label>
-                    <Button
-                      onClick={() => {
-                        setCodeSelectMode("code")
-                        setSelectedCodeForAI(undefined)
-                      }}
-                      disabled={codeSelectMode === "code" || isPrivate}
-                      variant="outline"
-                      size="xs">
-                      Select
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 mb-2">
-                    Click [Select] to choose code for AI analysis.
-                  </p>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between">
+                  <Label>Target Code</Label>
+                  <Button
+                    onClick={() => {
+                      setCodeSelectMode("code")
+                      setSelectedCodeForAI(undefined)
+                    }}
+                    disabled={codeSelectMode === "code" || isPrivate}
+                    variant="outline"
+                    size="xs">
+                    Select
+                  </Button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 mb-2">
+                  Click [Select] to choose code for AI analysis.
+                </p>
+
                 <div
                   className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50"
                   id="selected-code">
@@ -240,27 +243,27 @@ export default function AskAIPanel() {
               </div>
 
               {/* select code context for AI */}
-              <div>
-                <div className="flex flex-col mt-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Context Code</Label>
-                    <Button
-                      onClick={() => setCodeSelectMode("context")}
-                      disabled={codeSelectMode === "context" || isPrivate}
-                      variant="outline"
-                      size="xs">
-                      Select
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2 mb-2">
-                    Click [Select] to identify the relevant context code for AI
-                    analysis.
-                  </p>
+              <div className="flex flex-col mt-2">
+                <div className="flex items-center justify-between">
+                  <Label>Context Code</Label>
+                  <Button
+                    onClick={() => setCodeSelectMode("context")}
+                    disabled={codeSelectMode === "context" || isPrivate}
+                    variant="outline"
+                    size="xs">
+                    Select
+                  </Button>
                 </div>
+                <p className="text-xs text-gray-500 mt-2 mb-2">
+                  Click [Select] to identify the relevant context code for AI
+                  analysis.
+                </p>
 
                 {selectedCodeContextForAI.length > 0 ? (
                   selectedCodeContextForAI.map((code) => (
-                    <div className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50">
+                    <div
+                      key={`${code.filePath}-${code.lineStart}-${code.lineEnd}`}
+                      className="flex h-auto w-full px-3 py-2 rounded-md border border-input shadow-sm text-xs cursor-not-allowed opacity-50">
                       <pre className="whitespace-pre-wrap">{`${code.filePath}:${code.lineStart}-${code.lineEnd}`}</pre>
                       <Button
                         onClick={() =>
@@ -313,7 +316,7 @@ export default function AskAIPanel() {
                         )
                         return
                       }
-                      handleSubmit()
+                      handleSendPrompt()
                     }}
                     size="sm"
                     variant="outline"
@@ -325,9 +328,8 @@ export default function AskAIPanel() {
               </div>
             </div>
           )}
-          {error && <div className="text-red-500">{error.message}</div>}
           {completion && (
-            <div className="my-4">
+            <div className="my-4 p-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -335,60 +337,8 @@ export default function AskAIPanel() {
                 onClick={() => setCompletion(null)}>
                 back
               </Button>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  // table
-                  table: ({ node, ...props }) => (
-                    <table
-                      className="border-collapse border border-slate-300 dark:border-slate-700"
-                      {...props}
-                    />
-                  ),
-                  tr: ({ node, ...props }) => (
-                    <tr
-                      className="border-b border-slate-300 dark:border-slate-700"
-                      {...props}
-                    />
-                  ),
-                  td: ({ node, ...props }) => (
-                    <td
-                      className="border border-slate-300 dark:border-slate-700 px-4 py-2"
-                      {...props}
-                    />
-                  ),
-                  th: ({ node, ...props }) => (
-                    <th
-                      className="border border-slate-300 dark:border-slate-700 px-4 py-2 font-semibold"
-                      {...props}
-                    />
-                  ),
-                  // task-list-item
-                  li: ({ node, className, ...props }) => {
-                    if (className?.includes("task-list-item")) {
-                      return (
-                        <li className="flex items-start gap-2" {...props} />
-                      )
-                    }
-                    return <li {...props} />
-                  },
-                  // code block
-                  code({ node, inline, className, children, ...props }) {
-                    return (
-                      <code
-                        className={`${
-                          inline
-                            ? "bg-gray-200 dark:bg-gray-800 rounded px-1"
-                            : "block bg-gray-200 dark:bg-gray-800 p-4 rounded"
-                        }`}
-                        {...props}>
-                        {children}
-                      </code>
-                    )
-                  }
-                }}>
-                {completion}
-              </ReactMarkdown>
+              {/* <div className="whitespace-pre-wrap text-sm">{completion}</div> */}
+              <MarkdownRenderer markdown={completion} />
             </div>
           )}
           {statusMessage && (

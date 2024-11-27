@@ -1,18 +1,16 @@
 {
   "extends": "plasmo/templates/tsconfig.base",
-  "exclude": [
-    "node_modules"
-  ],
+  "exclude": ["node_modules"],
   "include": [
     ".plasmo/index.d.ts",
     "./**/*.ts",
-    "./**/*.tsx"
+    "./**/*.tsx",
+    "components/ask-ai-panel.js",
+    "components/chromeAiPrompt.tsx"
   ],
   "compilerOptions": {
     "paths": {
-      "~*": [
-        "./*"
-      ],
+      "~*": ["./*"],
       "@/*": ["./*"]
     },
     "baseUrl": "."

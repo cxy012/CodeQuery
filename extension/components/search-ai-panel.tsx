@@ -10,20 +10,19 @@ import { fetchRepoLanguages } from "@/lib/api-service"
 import axios from "axios"
 import { Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { useMutation } from "react-query"
 
 import { useRepoMetaData } from "~components/hooks/useRepoinfo"
 
 export default function SearchAIPanel() {
-  const { owner, repo, isPrivate } = useRepoMetaData()
+  const { owner, repo, isPrivate, treeSHA } = useRepoMetaData()
   const repoMeta = useGithubRepoMeta()
   const [languageOptions, setLanguageOptions] = useState<Option[]>([])
   const [selectedLanguages, setSelectedLanguages] = useState<Option[]>([])
   const [question, setQuestion] = useState<string>("")
   const [potentialPaths, setPotentialPaths] = useState<string[]>([])
   const [statusMessage, setStatusMessage] = useState<string>("")
-  const [modelType, setModelType] = useState("gemini-1.5-flash-latest")
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [filePaths, setFilePaths] = useState<string>("")
 
   useEffect(() => {
     const loadRepoLanguages = async () => {
@@ -44,40 +43,60 @@ export default function SearchAIPanel() {
         setIsLoading(false)
       }
     }
+
     loadRepoLanguages()
   }, [owner, repo])
 
   const handleRedirect = (path: string) => {
-    const url = `https://github.com/${owner}/${repo}/blob/${repoMeta.treeSHA}/${path}`
-    window.open(url, "_self")
+    const url = `https://github.com/${owner}/${repo}/blob/${treeSHA}/${path}`
+    window.open(url, "_blank")
   }
-  const { mutate: searchWithAI, isLoading: isSearchingAI } = useMutation({
-    mutationFn: async () => {
+
+  async function handleSearchWithAI() {
+    if (!question) {
+      setStatusMessage("Please enter a question.")
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      setStatusMessage("Fetching repository file paths...")
       const response = await axios.post(
         `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/search-files`,
         {
-          question,
           owner,
           repo,
           languages: selectedLanguages.map((opt) => opt.value),
           treeSHA: repoMeta.treeSHA,
-          modelType
-        },
-        {
-          timeout: 10000
+          question
         }
       )
-      return response.data
-    },
-    onSuccess: (paths) => {
-      setPotentialPaths(paths)
-      setStatusMessage("Successfully found files for the given question.")
-    },
-    onError: (error) => {
+      const prompt = response.data
+
+      const { available } = await (
+        window as any
+      ).ai.languageModel.capabilities()
+
+      if (available !== "no") {
+        const session = await (window as any).ai.languageModel.create()
+
+        console.log("result: ", prompt)
+        const result = await session.prompt(prompt)
+        const paths = result
+          .match(/\d+\.\s+([^\n]+)/g)
+          .map((line) => line.replace(/^\d+\.\s+/, ""))
+        setPotentialPaths(paths)
+        setStatusMessage("Successfully found files for the given question.")
+      } else {
+        setStatusMessage("Model is not available currently.")
+      }
+    } catch (error) {
       console.error("Error searching files with AI:", error)
       setStatusMessage("Failed to search files with AI.")
+    } finally {
+      setIsLoading(false)
     }
-  })
+  }
 
   return (
     <>
@@ -89,17 +108,10 @@ export default function SearchAIPanel() {
 
       <>
         <div className="mt-4">
-          <Label className="font-bold">Select Model</Label>
+          <Label className="font-bold">Current Model</Label>
           <div className="flex gap-2 justify-start">
-            <Badge
-              className={`cursor-pointer ${modelType === "gemini-1.5-flash-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-              onClick={() => setModelType("gemini-1.5-flash-latest")}>
-              Gemini 1.5 Flash
-            </Badge>
-            <Badge
-              className={`cursor-pointer ${modelType === "gemini-1.5-pro-latest" ? "bg-blue-500 text-white" : "bg-gray-200 text-black"}`}
-              onClick={() => setModelType("gemini-1.5-pro-latest")}>
-              Gemini 1.5 Pro
+            <Badge className="bg-blue-500 text-white">
+              Gemini Nano (Built-in Model)
             </Badge>
           </div>
         </div>
@@ -136,9 +148,9 @@ export default function SearchAIPanel() {
           <Button
             size="sm"
             variant="secondary"
-            onClick={() => searchWithAI()}
-            disabled={isSearchingAI || isPrivate}>
-            {isSearchingAI ? (
+            onClick={() => handleSearchWithAI()}
+            disabled={isLoading || isPrivate}>
+            {isLoading ? (
               <Loader2 className="animate-spin" size={16} />
             ) : (
               "Search with AI"
