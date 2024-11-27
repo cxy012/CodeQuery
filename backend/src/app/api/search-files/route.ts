@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Limit the number of files to prevent overly large prompts
-    const limitedTargetFiles = targetFiles.slice(0, 100);
+    const limitedTargetFiles = targetFiles.slice(0, 300);
     const filePaths = limitedTargetFiles.map((file) => file.path);
     const filePathsForPrompt = filePaths.join("\n");
 

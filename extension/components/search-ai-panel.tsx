@@ -82,7 +82,9 @@ export default function SearchAIPanel() {
 
         console.log("result: ", prompt)
         const result = await session.prompt(prompt)
-        const paths = result.split(/\r?\n/)
+        const paths = result
+          .match(/\d+\.\s+([^\n]+)/g)
+          .map((line) => line.replace(/^\d+\.\s+/, ""))
         setPotentialPaths(paths)
         setStatusMessage("Successfully found files for the given question.")
       } else {
