@@ -67,10 +67,11 @@ export default function SearchAIPanel() {
           owner,
           repo,
           languages: selectedLanguages.map((opt) => opt.value),
-          treeSHA: repoMeta.treeSHA
+          treeSHA: repoMeta.treeSHA,
+          question
         }
       )
-      const fetchedFilePaths = response.data
+      const prompt = response.data
 
       const { available } = await (
         window as any
@@ -78,10 +79,9 @@ export default function SearchAIPanel() {
 
       if (available !== "no") {
         const session = await (window as any).ai.languageModel.create()
-        const prompt = generateSearchPrompt(fetchedFilePaths)
 
-        const result = await session.prompt(prompt)
         console.log("result: ", prompt)
+        const result = await session.prompt(prompt)
         const paths = result.split(/\r?\n/)
         setPotentialPaths(paths)
         setStatusMessage("Successfully found files for the given question.")
@@ -94,22 +94,6 @@ export default function SearchAIPanel() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  function generateSearchPrompt(filePaths: string) {
-    let prompt = `You are provided with the following list of file paths from the ${owner}/${repo} GitHub repository. Your task is to determine the most relevant file paths that may contain core implementation logic related to the question: "${question}". Do not generate new paths, only select from the provided list.
-
-Guidelines:
-1. Only include core implementation files, and exclude any files that are related to testing, types, documentation, design, or configuration.
-2. Provide only the top 5 most relevant results.
-3. Ensure the response contains only file paths from the given list, separated by new lines, without any additional formatting or markdown.
-
-Here is the list of file paths:
-${filePaths}
-
-Please provide the top 5 file paths that are most likely to contain the relevant core implementation logic.`
-
-    return prompt
   }
 
   return (

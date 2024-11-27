@@ -1,12 +1,5 @@
 import axios from "axios"
 
-export const fetchModelInfos = async () => {
-  const response = await axios.get(
-    `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/extension/model-configs`
-  )
-  return response.data
-}
-
 export const fetchRepoLanguages = async (owner: string, repo: string) => {
   const response = await axios.get(
     `${process.env.PLASMO_PUBLIC_BACKEND_URL}api/github/${owner}/${repo}/languages`,
