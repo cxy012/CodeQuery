@@ -124,11 +124,10 @@ function generateSearchPrompt(
 
 Guidelines:
 1. Only include core implementation files, and exclude any files that are related to testing, types, documentation, design, or configuration.
-2. Provide only the top 5 most relevant results.
+2. Provide only the top 5 most relevant file paths.
 3. Ensure the response contains only file paths from the given list
 
 Here is the list of file paths:
 ${filePaths}
-
-Please provide the top 5 file paths that are most likely to contain the relevant core implementation logic.`;
+`;
 }
