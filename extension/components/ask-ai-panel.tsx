@@ -19,6 +19,7 @@ interface CodeContext {
 }
 
 export default function AskAIPanel() {
+  const [customInput, setCustomInput] = useState("")
   const [promptInput, setPromptInput] = useState("")
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [selectedCodeForAI, setSelectedCodeForAI] = useState<CodeContext>()
@@ -67,16 +68,21 @@ export default function AskAIPanel() {
   }
 
   useEffect(() => {
-    // Determine which prompt to use based on whether custom or predefined prompt is selected
-    if (!promptInput && !selectedPrompt) {
+    if (
+      !selectedPrompt &&
+      !customInput &&
+      !selectedCodeForAI &&
+      selectedCodeContextForAI.length === 0
+    ) {
       return
     }
 
-    let newPrompt = selectedPrompt || promptInput
+    let newPrompt = selectedPrompt || customInput
 
     if (selectedCodeForAI) {
       newPrompt += `\n\nCode:\n${selectedCodeForAI.filePath}:${selectedCodeForAI.lineStart}-${selectedCodeForAI.lineEnd}\n${selectedCodeForAI.code}\n\n`
     }
+
     if (selectedCodeContextForAI.length > 0) {
       newPrompt += `\n\nContext Code:\n`
       selectedCodeContextForAI.forEach((codeContext) => {
@@ -85,17 +91,17 @@ export default function AskAIPanel() {
     }
 
     setPromptInput(newPrompt)
-  }, [selectedPrompt, promptInput, selectedCodeForAI, selectedCodeContextForAI])
+  }, [selectedPrompt, customInput, selectedCodeForAI, selectedCodeContextForAI])
 
   const handlePredefinedPromptSelect = (promptText: string) => {
     setSelectedPrompt(promptText)
-    setPromptInput("")
+    setCustomInput("")
   }
 
   const handleCustomPromptChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    setPromptInput(e.target.value)
+    setCustomInput(e.target.value)
     setSelectedPrompt("")
   }
 
@@ -191,13 +197,13 @@ export default function AskAIPanel() {
                   </Button>
                 </div>
                 <div className="text-xs text-gray-500">
-                  {promptInput.length} characters
+                  {customInput.length} characters
                 </div>
                 <Textarea
                   className="text-xs overflow-hidden"
                   id="prompt"
                   onKeyDown={(e) => e.stopPropagation()}
-                  value={promptInput}
+                  value={customInput}
                   onChange={handleCustomPromptChange}
                   placeholder="Enter your custom prompt here..."
                 />
@@ -293,6 +299,8 @@ export default function AskAIPanel() {
                     setCodeSelectMode(undefined)
                     setSelectedCodeForAI(undefined)
                     setSelectedCodeContextForAI([])
+                    setCustomInput("")
+                    setPromptInput("")
                   }}
                   size="sm"
                   variant="secondary">
@@ -337,7 +345,6 @@ export default function AskAIPanel() {
                 onClick={() => setCompletion(null)}>
                 back
               </Button>
-              {/* <div className="whitespace-pre-wrap text-sm">{completion}</div> */}
               <MarkdownRenderer markdown={completion} />
             </div>
           )}
