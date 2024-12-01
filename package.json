@@ -1,6 +1,0 @@
-{
-	"dependencies": {
-		"@udecode/plate-common": "^39.2.15",
-		"cors": "^2.8.5"
-	}
-}
