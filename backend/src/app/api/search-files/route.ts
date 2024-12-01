@@ -81,17 +81,14 @@ export async function POST(req: NextRequest) {
       return ext !== undefined && targetFileExtensions.has(ext);
     });
 
-    // Limit the number of files to prevent overly large prompts
-    const limitedTargetFiles = targetFiles.slice(0, 300);
-    const filePaths = limitedTargetFiles.map((file) => file.path);
-    const filePathsForPrompt = filePaths.join("\n");
+    const filePaths = targetFiles.map((file) => file.path).join("\n");
 
-    // Generate the prompt
     const prompt = generateSearchPrompt(
       owner,
       repo,
       question,
-      filePathsForPrompt
+      filePaths,
+      15000
     );
 
     return NextResponse.json(prompt, {
@@ -114,7 +111,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function generateSearchPrompt(
+function generatePrompt(
   owner: string,
   repo: string,
   question: string,
@@ -123,11 +120,32 @@ function generateSearchPrompt(
   return `You are provided with the following list of file paths from the ${owner}/${repo} GitHub repository. Your task is to determine the most relevant file paths that may contain core implementation logic related to the question: "${question}". Do not generate new paths, only select from the provided list.
 
 Guidelines:
-1. Only include core implementation files, and exclude any files that are related to testing, types, documentation, design, or configuration.
+1. Only include core implementation files, do not include any files that are related to testing, types, documentation, design, or configuration.
 2. Provide only the top 5 most relevant file paths.
-3. Ensure the response contains only file paths from the given list
+3. Ensure the response contains only the file paths from the given list, formatted as follows:
+   - Return each file path with a number at the beginning, followed by a dot and a space (e.g., "1. path/to/file").
+   - The response should contain **only** the numbered file paths, and no additional explanation or commentary.
 
 Here is the list of file paths:
 ${filePaths}
 `;
+}
+
+function generateSearchPrompt(
+  owner: string,
+  repo: string,
+  question: string,
+  filePaths: string,
+  maxPromptLength: number
+): string {
+  const filePathArray = filePaths.split("\n");
+
+  let prompt = generatePrompt(owner, repo, question, filePathArray.join("\n"));
+
+  while (prompt.length > maxPromptLength && filePathArray.length > 0) {
+    filePathArray.pop();
+    prompt = generatePrompt(owner, repo, question, filePathArray.join("\n"));
+  }
+
+  return prompt;
 }
