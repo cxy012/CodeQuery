@@ -22,7 +22,6 @@ export default function SearchAIPanel() {
   const [potentialPaths, setPotentialPaths] = useState<string[]>([])
   const [statusMessage, setStatusMessage] = useState<string>("")
   const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [filePaths, setFilePaths] = useState<string>("")
 
   useEffect(() => {
     const loadRepoLanguages = async () => {
@@ -79,8 +78,6 @@ export default function SearchAIPanel() {
 
       if (available !== "no") {
         const session = await (window as any).ai.languageModel.create()
-
-        console.log("result: ", prompt)
         const result = await session.prompt(prompt)
         const paths = result
           .match(/\d+\.\s+([^\n]+)/g)

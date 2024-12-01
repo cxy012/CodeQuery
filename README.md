@@ -5,13 +5,12 @@ CodeQuery is a Chrome extension that allows developers to seamlessly leverage AI
 ## Prerequisites
 
 1. **GitHub Access Token**: You need to have a GitHub access token to access repositories if required.
-2. **API Access Key**: This key is required for the AI query backend service.
-3. **Environment Files**: You need to create environment files for both backend and frontend using the provided `.env.example` files:
+2. **Environment Files**: You need to create environment files for both backend and frontend using the provided `.env.example` files:
    - Backend `.env` setup
      - Copy the file from `backend/.env.example` to `backend/.env`.
      - Add your GitHub access token and API access key to the `.env` file.
    - Frontend `.env` setup
-     - Copy the file from `frontend/.env.example` to `frontend/.env`.
+     - Copy the file from `extension/.env.example` to `extension/.env`.
 
 ## Getting Started
 
