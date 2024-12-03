@@ -9,8 +9,17 @@ CodeQuery is a Chrome extension that allows developers to seamlessly leverage AI
    - Backend `.env` setup
      - Copy the file from `backend/.env.example` to `backend/.env`.
      - Add your GitHub access token and API access key to the `.env` file.
-   - Frontend `.env` setup
-     - Copy the file from `extension/.env.example` to `extension/.env`.
+
+```bash
+  cp backend/.env.example backend/.env
+```
+
+- Frontend `.env` setup
+  - Copy the file from `extension/.env.example` to `extension/.env`.
+
+```bash
+cp extension/.env.example extension/.env
+```
 
 ## Getting Started
 
@@ -42,10 +51,30 @@ npm run dev
 
 **Frontend**: Start the Plasmo extension service.
 
+### Development Mode
+
+To run the application in development mode, where you can make changes and see them in real-time:
+
 ```bash
 pnpm dev
 ```
 
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
+### Production Mode
 
-**Make sure that both components are running concurrently in separate terminal sessions.**
+If you want to deploy the application for regular use, you can build both the backend and frontend.
+
+Once both components are running, open your Chrome browser and load the development build:
+
+```bash
+pnpm build
+```
+
+1. Go to **chrome://extensions**.
+2. Enable **Developer mode**.
+   ![Developer Mode](example_images/dev_mode.png)
+3. Click Load unpacked and select the appropriate `extension/build/chrome-mv3-dev` directory from the frontend.
+   ![Load Unpacked](example_images/load_unpacked.png)
+
+## Development Notes
+
+- ** Origin Trials Key**: The current version of this extension includes an Origin Trials access key in the manifest to leverage the Prompt API for Chrome Extensions. This key may expire in the future, and users will need to add a new key to continue using these features. You can obtain a new key from [Chrome Origin Trials](https://developer.chrome.com/origintrials/#/trials/active).
