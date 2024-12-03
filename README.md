@@ -72,11 +72,11 @@ pnpm build
 1. Go to **chrome://extensions**.
 2. Enable **Developer mode**
 
-<img src="docs/developer-mode.png" alt="Developer Mode" style="width: 300px;"/>
+<img src="example_images/dev_mode.png" alt="Developer Mode" style="width: 300px;"/>
 
 3. Click Load unpacked and select the appropriate `extension/build/chrome-mv3-dev` or `extension/build/chrome-mv3-prod` directory from the frontend.
 
-<img src="docs/load-unpacked.png" alt="Load Unpacked" style="width: 300px;"/>
+<img src="example_images/load_unpacked.png" alt="Load Unpacked" style="width: 300px;"/>
 
 ## Development Notes
 
